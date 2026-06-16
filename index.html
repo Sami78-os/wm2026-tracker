@@ -260,17 +260,22 @@
   }
 
   // ── DATE HELPERS ──────────────────────────────────────────────
+  function localeCode() {
+    return LANG === 'en' ? 'en-US' : LANG === 'fr' ? 'fr-FR' : 'de-DE';
+  }
   function fmtDate(s) {
-    return s ? new Date(s).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    return s ? new Date(s).toLocaleDateString(localeCode(),{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}) : '';
   }
   function fmtTime(s) {
-    return s ? new Date(s).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr' : '';
+    if (!s) return '';
+    const time = new Date(s).toLocaleTimeString(localeCode(),{hour:'2-digit',minute:'2-digit'});
+    return LANG === 'en' ? time : time + ' ' + t('time.oClock');
   }
 
   // ── CARD HELPERS ──────────────────────────────────────────────
   function statusLabel(m) {
-    if (m.status==='FINISHED') return '<span class="match-status status-finished">✅ Abpfiff</span>';
-    if (m.status==='IN_PLAY'||m.status==='PAUSED') return `<span class="match-status status-live">🔴 LIVE</span>`;
+    if (m.status==='FINISHED') return `<span class="match-status status-finished">${t('match.status.finished')}</span>`;
+    if (m.status==='IN_PLAY'||m.status==='PAUSED') return `<span class="match-status status-live">${t('match.status.live')}</span>`;
     return `<span class="match-status status-upcoming">${fmtTime(m.utcDate)}</span>`;
   }
   function statusClass(m) {
@@ -314,7 +319,7 @@
             <div class="team-name">${m.awayTeam?.shortName||m.awayTeam?.name||'?'}</div>
           </div>
         </div>
-        <div class="match-venue">📅 ${fmtDate(m.utcDate)}${m.status!=='FINISHED'?' · ⏰ '+fmtTime(m.utcDate):''}</div>
+        <div class="match-venue">${t('match.when')} ${fmtDate(m.utcDate)}${m.status!=='FINISHED' ? ' · ' + t('match.kickoff') + ' ' + fmtTime(m.utcDate) : ''}</div>
       </div>`;
   }
 
@@ -377,18 +382,17 @@
   }
 
   function renderErgebnisse() {
-    // Neueste Ergebnisse zuerst: Sortiere nach Datum (Kickoff) absteigend.
+    // Newest first: sort by kickoff date descending.
     const fin = allMatches
       .filter(m => m.status === 'FINISHED')
       .sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate));
 
     if (!fin.length) {
       document.getElementById('ergebnisse-content').innerHTML =
-        '<p style="text-align:center;color:var(--muted);padding:40px">Noch keine Ergebnisse.</p>';
+        `<p style="text-align:center;color:var(--muted);padding:40px">${t('results.none')}</p>`;
       return;
     }
 
-    // Gruppiere nach Datum (Tag) – in der Reihenfolge, in der wir durch "fin" laufen
     const byDate = new Map();
     for (const m of fin) {
       const d = fmtDate(m.utcDate);
@@ -398,7 +402,7 @@
 
     let html = '';
     for (const [date, matches] of byDate.entries()) {
-      html += `<div class="date-divider">📅 ${date}</div><div class="match-grid">`;
+      html += `<div class="date-divider">${t('results.date')} ${date}</div><div class="match-grid">`;
       for (const m of matches) html += matchCard(m);
       html += '</div>';
     }
@@ -412,28 +416,50 @@
     const live   = allMatches.filter(m=>m.status==='IN_PLAY'||m.status==='PAUSED');
     const todayM = allMatches.filter(m=>new Date(m.utcDate).toDateString()===today);
     const tmrwM  = allMatches.filter(m=>new Date(m.utcDate).toDateString()===tmrw.toDateString());
+
+    const locale = LANG === 'en' ? 'en-US' : LANG === 'fr' ? 'fr-FR' : 'de-DE';
+
     let html='';
-    if (live.length) html+=`<div class="today-highlight"><div class="today-title">🔴 JETZT LIVE</div><div class="match-grid">${live.map(matchCard).join('')}</div></div>`;
-    if (todayM.length) html+=`<div class="today-highlight"><div class="today-title">📅 Heute — ${now.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'})}</div><div class="match-grid">${todayM.map(matchCard).join('')}</div></div>`;
-    else if (!live.length) html+=`<div class="card"><p style="text-align:center;padding:30px;color:var(--muted)">🎉 Heute keine Spiele!</p></div>`;
-    if (tmrwM.length) html+=`<div class="card"><div class="card-title">📅 Morgen — ${tmrw.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'})}</div><div class="match-grid">${tmrwM.map(matchCard).join('')}</div></div>`;
-    document.getElementById('heute-content').innerHTML=html||`<div class="card"><p style="text-align:center;padding:40px;color:var(--muted)">Keine Spiele für heute oder morgen.</p></div>`;
+    if (live.length) html+=`<div class="today-highlight"><div class="today-title">${t('today.live')}</div><div class="match-grid">${live.map(matchCard).join('')}</div></div>`;
+    if (todayM.length) html+=`<div class="today-highlight"><div class="today-title">${t('today.today')} — ${now.toLocaleDateString(locale,{weekday:'long',day:'2-digit',month:'long'})}</div><div class="match-grid">${todayM.map(matchCard).join('')}</div></div>`;
+    else if (!live.length) html+=`<div class="card"><p style="text-align:center;padding:30px;color:var(--muted)">${t('today.noGames')}</p></div>`;
+    if (tmrwM.length) html+=`<div class="card"><div class="card-title">${t('today.tomorrow')} — ${tmrw.toLocaleDateString(locale,{weekday:'long',day:'2-digit',month:'long'})}</div><div class="match-grid">${tmrwM.map(matchCard).join('')}</div></div>`;
+    document.getElementById('heute-content').innerHTML=html||`<div class="card"><p style="text-align:center;padding:40px;color:var(--muted)">${t('today.none')}</p></div>`;
   }
 
   function renderTabellen() {
-    if (!standings.length) { document.getElementById('tabellen-content').innerHTML='<p style="text-align:center;color:var(--muted);padding:40px">Tabellen noch nicht verfügbar.</p>'; return; }
-    let html='<div class="standings-grid">';
-    for (const g of standings) {
-      const l=(g.group||'Gruppe').replace('GROUP_','');
-      html+=`<div class="standings-card"><h3>🔡 Gruppe ${l}</h3><table class="standings-table"><tr><th>#</th><th>Team</th><th>Sp</th><th>Tore</th><th>Pkt</th></tr>`;
-      for (const r of (g.table||[])) {
-        const q=r.position<=2?'qualify':'';
-        html+=`<tr><td class="${q}">${r.position}</td><td>${flag(r.team?.name)} ${r.team?.shortName||r.team?.name||'?'}</td><td>${r.playedGames}</td><td>${r.goalsFor}:${r.goalsAgainst}</td><td class="pts">${r.points}</td></tr>`;
-      }
-      html+='</table></div>';
+    if (!standings.length) {
+      document.getElementById('tabellen-content').innerHTML =
+        `<p style="text-align:center;color:var(--muted);padding:40px">${t('standings.none')}</p>`;
+      return;
     }
-    html+='</div><p style="font-size:.72rem;color:var(--muted);margin-top:12px">🟢 Grün = Qualifikationsränge (Top 2)</p>';
-    document.getElementById('tabellen-content').innerHTML=html;
+
+    let html = '<div class="standings-grid">';
+    for (const g of standings) {
+      const l = (g.group || 'Group').replace('GROUP_','');
+      html += `<div class="standings-card"><h3>${t('standings.group')} ${l}</h3>
+        <table class="standings-table">
+          <tr>
+            <th>${t('standings.th.pos')}</th>
+            <th>${t('standings.th.team')}</th>
+            <th>${t('standings.th.played')}</th>
+            <th>${t('standings.th.goals')}</th>
+            <th>${t('standings.th.points')}</th>
+          </tr>`;
+      for (const r of (g.table || [])) {
+        const q = r.position <= 2 ? 'qualify' : '';
+        html += `<tr>
+          <td class="${q}">${r.position}</td>
+          <td>${flag(r.team?.name)} ${r.team?.shortName || r.team?.name || '?'}</td>
+          <td>${r.playedGames}</td>
+          <td>${r.goalsFor}:${r.goalsAgainst}</td>
+          <td class="pts">${r.points}</td>
+        </tr>`;
+      }
+      html += '</table></div>';
+    }
+    html += `</div><p style="font-size:.72rem;color:var(--muted);margin-top:12px">${t('standings.note')}</p>`;
+    document.getElementById('tabellen-content').innerHTML = html;
   }
 
   function renderStats() {
@@ -445,14 +471,17 @@
     document.getElementById('stat-siege').textContent=fin.filter(m=>m.score?.fullTime?.home!==m.score?.fullTime?.away).length;
     document.getElementById('stat-unentschieden').textContent=fin.filter(m=>m.score?.fullTime?.home===m.score?.fullTime?.away).length;
     const el=document.getElementById('scorer-list');
-    if (!scorers.length) { el.innerHTML='<p style="color:var(--muted);padding:16px;text-align:center">Noch keine Torschützendaten.</p>'; return; }
+    if (!scorers.length) { el.innerHTML=`<p style="color:var(--muted);padding:16px;text-align:center">${t('scorers.none')}</p>`; return; }
     const medals=['🥇','🥈','🥉'];
     el.innerHTML=scorers.slice(0,8).map((s,i)=>`
       <div class="scorer-item">
         <div class="scorer-rank">${medals[i]||(i+1)+'.'}</div>
         <div style="font-size:1.3rem">${flag(s.team?.name)}</div>
-        <div style="flex:1"><div class="scorer-name">${s.player?.name||'?'}</div><div class="scorer-country">${s.team?.shortName||s.team?.name||''}</div></div>
-        <div class="scorer-goals">${s.goals} ${'⚽'.repeat(Math.min(s.goals,5))}</div>
+        <div style="flex:1">
+          <div class="scorer-name">${s.player?.name||'?'}</div>
+          <div class="scorer-country">${s.team?.shortName||s.team?.name||''}</div>
+        </div>
+        <div class="scorer-goals">${t('scorers.goals', {n: String(s.goals)})} ${'⚽'.repeat(Math.min(s.goals,5))}</div>
       </div>`).join('');
   }
 
@@ -463,17 +492,21 @@
 
   function renderPrognosen() {
     const upcoming=allMatches.filter(m=>m.status==='SCHEDULED'||m.status==='TIMED').slice(0,12);
-    if(!upcoming.length){document.getElementById('prognosen-content').innerHTML='<p style="color:var(--muted);text-align:center;padding:40px">Keine kommenden Spiele verfügbar.</p>';return;}
+    if(!upcoming.length){document.getElementById('prognosen-content').innerHTML=`<p style="color:var(--muted);text-align:center;padding:40px">${t('pred.none')}</p>`;return;}
     document.getElementById('prognosen-content').innerHTML=upcoming.map(m=>{
       const hN=m.homeTeam?.name||'?', aN=m.awayTeam?.name||'?';
       const {h,a,conf}=predict(hN,aN);
       const diff=str(hN)-str(aN);
-      const txt=Math.abs(diff)>20?`${flag(hN)} klarer Favorit. Großer Sieg erwartet. ${flag(aN)} kämpft tapfer.`:Math.abs(diff)>10?`Spannendes Duell! ${flag(hN)} leicht im Vorteil, ${flag(aN)} gefährlich im Konter.`:`Ausgeglichenes Spiel auf Augenhöhe — Überraschung möglich! 🔥`;
+      const txt=Math.abs(diff)>20?
+        t('pred.text.big',{h: hN, a: aN}):
+        Math.abs(diff)>10?
+          t('pred.text.close',{h: hN, a: aN}):
+          t('pred.text.even');
       return `<div class="prognose-card">
-        <div class="prognose-date">📅 ${fmtDate(m.utcDate)} · ${fmtTime(m.utcDate)}</div>
+        <div class="prognose-date">${t('pred.when')} ${fmtDate(m.utcDate)} · ${fmtTime(m.utcDate)}</div>
         <div class="prognose-teams">${flag(hN)} ${m.homeTeam?.shortName||hN} vs. ${flag(aN)} ${m.awayTeam?.shortName||aN}</div>
-        <div class="prognose-result">KI-Tipp: ${h} – ${a}</div>
-        <div class="confidence-label"><span>KI-Konfidenz</span><span>${conf}%</span></div>
+        <div class="prognose-result">${t('pred.tip')} ${h} – ${a}</div>
+        <div class="confidence-label"><span>${t('pred.conf')}</span><span>${conf}%</span></div>
         <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%"></div></div>
         <div class="prognose-text">${txt}</div>
       </div>`;
@@ -504,6 +537,35 @@
       'header.subtitle':'Kanada • Mexiko • USA — 11. Juni bis 19. Juli 2026',
       'toolbar.loading':'⏳ Daten werden geladen…',
       'toolbar.refresh':'🔄 Aktualisieren',
+      'time.oClock':'Uhr',
+      'results.none':'Noch keine Ergebnisse.',
+      'results.date':'📅',
+      'match.when':'📅',
+      'match.kickoff':'⏰',
+      'match.status.finished':'✅ Abpfiff',
+      'match.status.live':'🔴 LIVE',
+      'today.live':'🔴 JETZT LIVE',
+      'today.today':'📅 Heute',
+      'today.tomorrow':'📅 Morgen',
+      'today.noGames':'🎉 Heute keine Spiele!',
+      'today.none':'Keine Spiele für heute oder morgen.',
+      'standings.none':'Tabellen noch nicht verfügbar.',
+      'standings.group':'🔡 Gruppe',
+      'standings.th.pos':'#',
+      'standings.th.team':'Team',
+      'standings.th.played':'Sp.',
+      'standings.th.goals':'Tore',
+      'standings.th.points':'Pkt',
+      'standings.note':'🟢 Grün = Qualifikationsränge (Top 2)',
+      'scorers.none':'Noch keine Torschützendaten.',
+      'scorers.goals':'{n}',
+      'pred.none':'Keine kommenden Spiele verfügbar.',
+      'pred.when':'📅',
+      'pred.tip':'KI-Tipp:',
+      'pred.conf':'KI-Konfidenz',
+      'pred.text.big':'{h} klarer Favorit. Großer Sieg erwartet. {a} kämpft tapfer.',
+      'pred.text.close':'Spannendes Duell! {h} leicht im Vorteil, {a} gefährlich im Konter.',
+      'pred.text.even':'Ausgeglichenes Spiel auf Augenhöhe — Überraschung möglich! 🔥',
       'nav.results':'📋 Ergebnisse',
       'nav.today':'📅 Heute & Morgen',
       'nav.standings':'📊 Tabellen',
@@ -524,6 +586,35 @@
       'header.subtitle':'Canada • Mexico • USA — 11 June to 19 July 2026',
       'toolbar.loading':'⏳ Loading data…',
       'toolbar.refresh':'🔄 Refresh',
+      'time.oClock':'',
+      'results.none':'No results yet.',
+      'results.date':'📅',
+      'match.when':'📅',
+      'match.kickoff':'⏰ Kick-off',
+      'match.status.finished':'✅ FT',
+      'match.status.live':'🔴 LIVE',
+      'today.live':'🔴 LIVE NOW',
+      'today.today':'📅 Today',
+      'today.tomorrow':'📅 Tomorrow',
+      'today.noGames':'🎉 No matches today!',
+      'today.none':'No matches scheduled for today or tomorrow.',
+      'standings.none':'Standings not available yet.',
+      'standings.group':'🔡 Group',
+      'standings.th.pos':'#',
+      'standings.th.team':'Team',
+      'standings.th.played':'P',
+      'standings.th.goals':'GF:GA',
+      'standings.th.points':'Pts',
+      'standings.note':'🟢 Green = qualification places (Top 2)',
+      'scorers.none':'No scorer data yet.',
+      'scorers.goals':'{n}',
+      'pred.none':'No upcoming matches available.',
+      'pred.when':'📅',
+      'pred.tip':'AI pick:',
+      'pred.conf':'Confidence',
+      'pred.text.big':'{h} are clear favourites. A big win is expected. {a} will fight hard.',
+      'pred.text.close':'Tight matchup! {h} slightly ahead, {a} dangerous on the break.',
+      'pred.text.even':'Very even game — an upset is possible! 🔥',
       'nav.results':'📋 Results',
       'nav.today':'📅 Today & Tomorrow',
       'nav.standings':'📊 Standings',
@@ -544,6 +635,35 @@
       'header.subtitle':'Canada • Mexique • États-Unis — 11 juin au 19 juillet 2026',
       'toolbar.loading':'⏳ Chargement des données…',
       'toolbar.refresh':'🔄 Actualiser',
+      'time.oClock':'',
+      'results.none':'Aucun résultat pour le moment.',
+      'results.date':'📅',
+      'match.when':'📅',
+      'match.kickoff':'⏰ Coup d’envoi',
+      'match.status.finished':'✅ FT',
+      'match.status.live':'🔴 EN DIRECT',
+      'today.live':'🔴 EN DIRECT MAINTENANT',
+      'today.today':'📅 Aujourd’hui',
+      'today.tomorrow':'📅 Demain',
+      'today.noGames':'🎉 Aucun match aujourd’hui !',
+      'today.none':'Aucun match prévu aujourd’hui ou demain.',
+      'standings.none':'Classements pas encore disponibles.',
+      'standings.group':'🔡 Groupe',
+      'standings.th.pos':'#',
+      'standings.th.team':'Équipe',
+      'standings.th.played':'J',
+      'standings.th.goals':'BP:BC',
+      'standings.th.points':'Pts',
+      'standings.note':'🟢 Vert = places qualificatives (Top 2)',
+      'scorers.none':'Pas encore de données buteurs.',
+      'scorers.goals':'{n}',
+      'pred.none':'Aucun match à venir disponible.',
+      'pred.when':'📅',
+      'pred.tip':'Pronostic IA :',
+      'pred.conf':'Confiance',
+      'pred.text.big':'{h} est net favori. Un large succès est attendu. {a} se battra jusqu’au bout.',
+      'pred.text.close':'Match serré ! {h} a un léger avantage, {a} est dangereux en contre.',
+      'pred.text.even':'Match très équilibré — surprise possible ! 🔥',
       'nav.results':'📋 Résultats',
       'nav.today':'📅 Aujourd’hui & Demain',
       'nav.standings':'📊 Classements',
@@ -580,9 +700,12 @@
   function setLang(next) {
     LANG = next;
     applyI18n();
-    // refresh dynamic strings
+    // Re-render dynamic sections so their strings update too
     if (allMatches.length) {
-      document.getElementById('refresh-btn').textContent = t('toolbar.refresh');
+      renderAll();
+      // keep toolbar text consistent
+      const btn = document.getElementById('refresh-btn');
+      if (btn) btn.textContent = t('toolbar.refresh');
     }
   }
 
