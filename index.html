@@ -202,11 +202,11 @@
 
 <script>
   // ── CONFIG ────────────────────────────────────────────────────
-  const API_KEY = 'eb8cd4089a1543d288ca603553ba8b51';
-  const COMP    = 'WC';
-  // CORS-Proxy — kostenlos, kein Login nötig
-  const PROXY   = 'https://corsproxy.io/?';
-  const BASE    = `${PROXY}https://api.football-data.org/v4`;
+  // ✅ SECURE MODE: API-Key liegt NICHT mehr im Frontend.
+  // Du setzt hier nur die URL deines Cloudflare Workers ein (siehe Anleitung unten).
+  const WORKER_BASE = 'https://DEIN-WORKER.SUBDOMAIN.workers.dev';
+  const COMP        = 'WC';
+  const BASE        = WORKER_BASE;
 
   let allMatches = [], standings = [], scorers = [];
 
@@ -301,7 +301,7 @@
   async function fetchAll() {
     setLoading(true); setError(null);
     try {
-      const headers = { 'X-Auth-Token': API_KEY };
+      const headers = {}; // auth is handled by the Worker
       const [mRes, sRes, scRes] = await Promise.all([
         fetch(`${BASE}/competitions/${COMP}/matches`, { headers }),
         fetch(`${BASE}/competitions/${COMP}/standings`, { headers }),
@@ -325,17 +325,33 @@
   }
 
   function renderErgebnisse() {
-    const fin = allMatches.filter(m=>m.status==='FINISHED');
-    if (!fin.length) { document.getElementById('ergebnisse-content').innerHTML='<p style="text-align:center;color:var(--muted);padding:40px">Noch keine Ergebnisse.</p>'; return; }
-    const byDate = {};
-    for (const m of fin) { const d=fmtDate(m.utcDate); (byDate[d]=byDate[d]||[]).push(m); }
-    let html='';
-    for (const [date,matches] of Object.entries(byDate)) {
-      html+=`<div class="date-divider">📅 ${date}</div><div class="match-grid">`;
-      for (const m of matches) html+=matchCard(m);
-      html+='</div>';
+    // Neueste Ergebnisse zuerst: Sortiere nach Datum (Kickoff) absteigend.
+    const fin = allMatches
+      .filter(m => m.status === 'FINISHED')
+      .sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate));
+
+    if (!fin.length) {
+      document.getElementById('ergebnisse-content').innerHTML =
+        '<p style="text-align:center;color:var(--muted);padding:40px">Noch keine Ergebnisse.</p>';
+      return;
     }
-    document.getElementById('ergebnisse-content').innerHTML=html;
+
+    // Gruppiere nach Datum (Tag) – in der Reihenfolge, in der wir durch "fin" laufen
+    const byDate = new Map();
+    for (const m of fin) {
+      const d = fmtDate(m.utcDate);
+      if (!byDate.has(d)) byDate.set(d, []);
+      byDate.get(d).push(m);
+    }
+
+    let html = '';
+    for (const [date, matches] of byDate.entries()) {
+      html += `<div class="date-divider">📅 ${date}</div><div class="match-grid">`;
+      for (const m of matches) html += matchCard(m);
+      html += '</div>';
+    }
+
+    document.getElementById('ergebnisse-content').innerHTML = html;
   }
 
   function renderHeute() {
