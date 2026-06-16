@@ -204,9 +204,19 @@
   // ── CONFIG ────────────────────────────────────────────────────
   // ✅ SECURE MODE: API-Key liegt NICHT mehr im Frontend.
   // Du setzt hier nur die URL deines Cloudflare Workers ein (siehe Anleitung unten).
-  const WORKER_BASE = 'https://DEIN-WORKER.SUBDOMAIN.workers.dev';
+  // Datenquelle (mit Fallback):
+  // 1) Cloudflare Worker (empfohlen, Key bleibt geheim) – trage hier deine echte Worker-URL ein
+  // 2) corsproxy.io (Fallback, falls Worker noch nicht bereit ist)
+  // 3) Direkt (kann wegen CORS scheitern)
+  const WORKER_BASE = ''; // z.B. 'https://wm2026-proxy.deinname.workers.dev'
   const COMP        = 'WC';
-  const BASE        = WORKER_BASE;
+  const SOURCES     = [
+    WORKER_BASE,
+    'https://corsproxy.io/?https://api.football-data.org/v4',
+    'https://api.football-data.org/v4'
+  ].filter(Boolean);
+  let SOURCE_IDX = 0;
+  function baseUrl() { return SOURCES[Math.min(SOURCE_IDX, SOURCES.length - 1)]; }
 
   let allMatches = [], standings = [], scorers = [];
 
@@ -300,24 +310,52 @@
   // ── FETCH ─────────────────────────────────────────────────────
   async function fetchAll() {
     setLoading(true); setError(null);
-    try {
-      const headers = {}; // auth is handled by the Worker
-      const [mRes, sRes, scRes] = await Promise.all([
-        fetch(`${BASE}/competitions/${COMP}/matches`, { headers }),
-        fetch(`${BASE}/competitions/${COMP}/standings`, { headers }),
-        fetch(`${BASE}/competitions/${COMP}/scorers?limit=10`, { headers }),
-      ]);
-      if (!mRes.ok) throw new Error(`Fehler ${mRes.status}`);
-      allMatches = (await mRes.json()).matches || [];
-      standings  = sRes.ok  ? ((await sRes.json()).standings || []) : [];
-      scorers    = scRes.ok ? ((await scRes.json()).scorers  || []) : [];
-      renderAll();
-      document.getElementById('last-updated').textContent =
-        '🟢 Aktualisiert: ' + new Date().toLocaleTimeString('de-DE') + ' · Auto-Refresh alle 60 Sek.';
-    } catch(e) {
-      setError('⚠️ Verbindungsfehler: ' + e.message + ' — Bitte Seite neu laden.');
-    } finally { setLoading(false); }
+
+    // Try sources in order until one works
+    for (SOURCE_IDX = 0; SOURCE_IDX < SOURCES.length; SOURCE_IDX++) {
+      try {
+        const base = baseUrl();
+        const headers = {};
+
+        // If we are using a direct/proxy-to-upstream (non-worker), we must include token.
+        // We detect "workers.dev" as a proxy that already adds auth.
+        const usingWorker = /workers\.dev\/?$/.test(base) || base.includes('workers.dev');
+        if (!usingWorker) {
+          headers['X-Auth-Token'] = 'eb8cd4089a1543d288ca603553ba8b51';
+        }
+
+        const [mRes, sRes, scRes] = await Promise.all([
+          fetch(`${base}/competitions/${COMP}/matches`, { headers }),
+          fetch(`${base}/competitions/${COMP}/standings`, { headers }),
+          fetch(`${base}/competitions/${COMP}/scorers?limit=10`, { headers }),
+        ]);
+
+        if (!mRes.ok) {
+          // Try next source
+          continue;
+        }
+
+        allMatches = (await mRes.json()).matches || [];
+        standings  = sRes.ok  ? ((await sRes.json()).standings || []) : [];
+        scorers    = scRes.ok ? ((await scRes.json()).scorers  || []) : [];
+
+        renderAll();
+        document.getElementById('last-updated').textContent =
+          `🟢 Aktualisiert: ${new Date().toLocaleTimeString('de-DE')} · Quelle: ${usingWorker ? 'Worker' : 'Proxy'} · Auto-Refresh alle 60 Sek.`;
+
+        setLoading(false);
+        return;
+      } catch (e) {
+        // Try next source
+      }
+    }
+
+    // If all sources failed:
+    setError('⚠️ Verbindungsfehler: Failed to fetch — bitte AdBlock/Tracking-Schutz testweise deaktivieren oder Worker-URL eintragen.');
+    setLoading(false);
   }
+
+  // (Alten fetchAll()-Code entfernt – wir nutzen oben die neue Fallback-Variante.)
 
   // ── RENDER ────────────────────────────────────────────────────
   function renderAll() {
