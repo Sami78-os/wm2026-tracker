@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reiseplan Sommer 26 — Formular</title>
+  <style>
+    :root{--bg:#f6f9fc;--card:#ffffff;--accent:#ff7a59;--muted:#556;--radius:10px}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);margin:0;color:#122}
+    .wrap{max-width:900px;margin:28px auto;padding:20px}
+    .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:0 6px 20px rgba(20,30,40,0.06)}
+    h1{margin:0 0 8px 0;font-size:20px}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:12px;margin-bottom:6px}
+    input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef6;background:white;font-size:15px}
+    .row{display:flex;gap:10px}
+    .col{flex:1}
+    .btn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600;margin-top:12px}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px;color:#667}
+    @media(max-width:700px){.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Reiseplan Sommer 26 — Formular</h1>
+      <p class="muted">Fülle das Formular aus und sende die Anfrage per E‑Mail (über den Worker).</p>
+  <form id="travelForm" class="panel" onsubmit="return false;">
+    <!-- Abschnitt 1: Art der Reise -->
+    <label>Welche Art von Reise planst du? *</label>
+    <select id="tripType" required>
+      <option value="">-- wählen --</option>
+      <option>Flugreise</option>
+      <option>Autoreise</option>
+      <option>Bahnreise</option>
+      <option>Kreuzfahrt</option>
+      <option>Motorradreise</option>
+      <option>Wohnmobilreise</option>
+      <option>Sonstiges</option>
+    </select>
+
+    <!-- Abschnitt 2: Reisedetails -->
+    <div class="row">
+      <div class="col">
+        <label>Wohin geht die Reise? *</label>
+        <input id="destination" required placeholder="z. B. Toskana, Italien">
+      </div>
+      <div class="col">
+        <label>Deine E-Mail-Adresse für Planungs‑Antwort (optional)</label>
+        <input id="senderEmail" type="email" placeholder="deine@beispiel.de">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Wann reist du ab? *</label>
+        <input id="startDate" type="date" required>
+      </div>
+      <div class="col">
+        <label>Wann kehrst du zurück? *</label>
+        <input id="endDate" type="date" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Wie viele Personen reisen mit? *</label>
+        <input id="participants" required placeholder="z. B. 2 Erwachsene, 1 Kind">
+      </div>
+      <div class="col">
+        <label>Reist du mit Kindern?</label>
+        <select id="withChildren"><option>Nein</option><option>Ja</option></select>
+      </div>
+    </div>
+
+    <label>Alter der Kinder (Komma‑getrennt)</label>
+    <input id="childrenAges" placeholder="z. B. 3,7">
+
+    <!-- Abschnitt 3: Routenplanung (sichtbar bei Auto/Wohnmobil) -->
+    <div id="routeSection" style="display:none">
+      <label>Welche Art von Route bevorzugst du?</label>
+      <select id="routeType">
+        <option>Schnellste Route (direkt ans Ziel)</option>
+        <option>Entspannte Route mit Zwischenzielen & Sehenswürdigkeiten</option>
+        <option>Gemischt (schnell fahren, aber 1–2 Stopps einplanen)</option>
+      </select>
+
+      <div class="row">
+        <div class="col">
+          <label>Wie viele Übernachtungen auf der Strecke?</label>
+          <input id="overnightsOnWay" type="number" min="0" value="0">
+        </div>
+        <div class="col">
+          <label>Welche Art von Unterkunft auf der Strecke?</label>
+          <select id="accommodationOnWay"><option>Hotel</option><option>Pension / B&B</option><option>Campingplatz</option><option>Im Fahrzeug schlafen</option><option>Airbnb / Ferienwohnung</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abschnitt 4: Fahrzeug & Mietwagen -->
+    <label>Benötigst du ein Mietfahrzeug?</label>
+    <select id="needRental"><option>Nein</option><option>Ja</option></select>
+
+    <!-- Abschnitt 6: Visum -->
+    <label>Welche Staatsbürgerschaft hast du?</label>
+    <input id="nationality" placeholder="z. B. Deutsch">
+    <label>Ist ein Visum für dein Reiseziel erforderlich?</label>
+    <select id="visaRequirement"><option>Ich weiß es nicht (bitte prüfen)</option><option>Ja, ich brauche ein Visum</option><option>Nein, visumfrei</option></select>
+
+    <!-- Abschnitt 7: Packliste -->
+    <label>Welches Klima erwartet dich am Zielort?</label>
+    <select id="climate"><option>Heiß & sonnig</option><option>Warm & feucht (tropisch)</option><option>Gemäßigt</option><option>Kalt / Winterlich</option><option>Wechselhaft</option></select>
+
+    <label>Was sind die Hauptaktivitäten auf deiner Reise?</label>
+    <select id="activities" multiple size="4">
+      <option>Strand & Baden</option>
+      <option>Wandern / Trekking</option>
+      <option>Stadtbesichtigungen / Kultur</option>
+      <option>Wintersport</option>
+      <option>Wassersport</option>
+      <option>Geschäftsreise</option>
+      <option>Familienurlaub mit Kindern</option>
+      <option>Camping / Outdoor</option>
+    </select>
+
+    <label>Reist du mit Handgepäck oder aufgegebenem Gepäck?</label>
+    <select id="baggage"><option>Nur Handgepäck</option><option>Aufgegebenes Gepäck</option><option>Beides</option></select>
+
+    <!-- Abschnitt 8: Kultur & Verhaltenstipps -->
+    <label>In welchem kulturellen Umfeld findet deine Reise statt?</label>
+    <select id="culturalEnv"><option>Westlich / europäisch geprägt</option><option>Islamisch geprägt</option><option>Hinduistisch / Buddhistisch geprägt</option><option>Asiatisch (Ostasien)</option><option>Afrikanisch / indigene Kulturen</option><option>Ich weiß es nicht</option></select>
+
+    <label>Was möchtest du über das Reiseziel wissen?</label>
+    <select id="cultureQuestions" multiple size="5">
+      <option>No-Go’s & Tabus</option>
+      <option>Kleiderordnung & Dresscode</option>
+      <option>Trinkgeld-Gepflegenheiten</option>
+      <option>Begrenzungsregeln & Verhaltenstipps</option>
+      <option>Religiosität & Feiertage</option>
+      <option>Fotografie-Regeln</option>
+    </select>
+
+    <!-- Abschnitt 9: Währung & Zahlungsmittel -->
+    <label>Wie möchtest du vor Ort zahlen?</label>
+    <select id="paymentPreference">
+      <option>Kreditkarte</option><option>Debitkarte</option><option>Bargeld in Euro</option><option>Bargeld in Landeswährung</option><option>Mobile Payment</option>
+    </select>
+
+    <label>Hast du eine Reisekreditkarte ohne Auslandsgebühren?</label>
+    <select id="hasTravelCard"><option>Ja</option><option>Nein</option><option>Noch nicht, aber ich möchte eine beantragen</option></select>
+
+    <!-- Abschnitt 10: Checkliste für zu Hause -->
+    <label>Was musst du vor der Abreise zu Hause erledigen? (Mehrfachauswahl möglich)</label>
+    <select id="homeChecklist" multiple size="6">
+      <option>Müll rausbringen</option>
+      <option>Nachbarn / Freunde um Briefkastenleerung bitten</option>
+      <option>Jemanden für die Blumenpflege organisieren</option>
+      <option>Haustierversorgung sicherstellen</option>
+      <option>Strom / Wasser / Heizung reduzieren</option>
+      <option>Fenster & Türen abschließen prüfen</option>
+      <option>Kühlschrank leeren / abtauen</option>
+      <option>Wichtige Dokumente kopieren & sicher hinterlegen</option>
+      <option>Reisekrankenversicherung abschließen</option>
+      <option>Bank über Auslandsreise informieren</option>
+      <option>Roaming / Datentarif für das Ausland aktivieren</option>
+      <option>Notfallkontakte hinterlassen</option>
+    </select>
+
+    <!-- Empfängerfeld (Nutzer wählt) -->
+    <label>Empfänger‑E‑Mail (Wohin sollen die Angebote gesendet werden?) *</label>
+    <input id="recipientEmail" type="email" required placeholder="z. B. empfanger@domain.de">
+
+    <label>Zusätzliche Nachricht (optional)</label>
+    <textarea id="notes" rows="3" placeholder="Zusätzliche Wünsche / Hinweise"></textarea>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+      <button class="btn" id="submitBtn">Anfrage senden</button>
+      <div id="status" class="small muted"></div>
+    </div>
+  </form>
+
+</div>
+  </div>
+<script>
+  const tripType = document.getElementById('tripType');
+  const routeSection = document.getElementById('routeSection');
+  tripType.addEventListener('change', ()=> {
+    const v = tripType.value;
+    routeSection.style.display = (v==='Autoreise' || v==='Wohnmobilreise') ? 'block' : 'none';
+  });
+
+  function multiValues(selId){
+    const sel = document.getElementById(selId);
+    return Array.from(sel.selectedOptions).map(o=>o.value);
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', async (e)=>{
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.textContent = 'Sende…';
+    const payload = {
+      to: document.getElementById('recipientEmail').value,
+      subject: `Reiseplan Anfrage — ${document.getElementById('destination').value}`,
+      summary: document.getElementById('notes').value || '',
+      details: {
+        tripType: document.getElementById('tripType').value,
+        destination: document.getElementById('destination').value,
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        participants: document.getElementById('participants').value,
+        children: document.getElementById('withChildren').value === 'Ja' ? 1 : 0,
+        childrenAges: document.getElementById('childrenAges').value,
+        routeType: document.getElementById('routeType') ? document.getElementById('routeType').value : '',
+        overnightsOnWay: parseInt(document.getElementById('overnightsOnWay').value || '0',10),
+        accommodationOnWay: document.getElementById('accommodationOnWay') ? document.getElementById('accommodationOnWay').value : '',
+        needRental: document.getElementById('needRental').value,
+        nationality: document.getElementById('nationality').value,
+        visaRequirement: document.getElementById('visaRequirement').value,
+        climate: document.getElementById('climate').value,
+        activities: multiValues('activities').join('; '),
+        baggage: document.getElementById('baggage').value,
+        culturalEnv: document.getElementById('culturalEnv').value,
+        cultureQuestions: multiValues('cultureQuestions').join('; '),
+        paymentPreference: document.getElementById('paymentPreference').value,
+        hasTravelCard: document.getElementById('hasTravelCard').value,
+        homeChecklist: multiValues('homeChecklist')
+      },
+      itinerary: {},
+      packlist: []
+    };
+
+    try {
+      const endpoint = window.backendUrl || 'https://wm2026-tracker.o-sentoussi78.workers.dev/api/send-offer';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if(res.ok && j.ok){
+        status.textContent = 'Anfrage gesendet.';
+        status.style.color = 'green';
+      } else {
+        status.textContent = 'Fehler: ' + (j && j.error ? j.error : res.statusText);
+        status.style.color = 'crimson';
+      }
+    } catch(err){
+      status.textContent = 'Netzwerkfehler: ' + err.message;
+      status.style.color = 'crimson';
+    }
+  });
+</script>
+</body>
+</html>
